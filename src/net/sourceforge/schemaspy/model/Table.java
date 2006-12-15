@@ -21,7 +21,7 @@ public class Table implements Comparable {
         this.schema = schema;
         this.name = name;
         setComments(comments);
-        initColumns(meta);
+        initColumns(db);
         initIndexes(db, meta, properties);
         initPrimaryKeys(meta);
         numRows = fetchNumRows(db);
@@ -124,12 +124,12 @@ public class Table implements Comparable {
         primaryKeys.add(getColumn(columnName));
     }
 
-    private void initColumns(DatabaseMetaData meta) throws SQLException {
+    private void initColumns(Database db) throws SQLException {
         ResultSet rs = null;
 
         synchronized (Table.class) {
             try {
-                rs = meta.getColumns(null, getSchema(), getName(), "%");
+                rs = db.getMetaData().getColumns(null, getSchema(), getName(), "%");
 
                 while (rs.next())
                     addColumn(rs);
@@ -143,10 +143,10 @@ public class Table implements Comparable {
         }
 
         if (!isView())
-            initColumnAutoUpdate(meta);
+            initColumnAutoUpdate(db);
     }
 
-    private void initColumnAutoUpdate(DatabaseMetaData meta) throws SQLException {
+    private void initColumnAutoUpdate(Database db) throws SQLException {
         ResultSet rs = null;
         PreparedStatement stmt = null;
 
@@ -159,14 +159,11 @@ public class Table implements Comparable {
             sql.append('.');
         }
         
-        String escape = meta.getIdentifierQuoteString();
-        sql.append(escape);
-        sql.append(getName());
-        sql.append(escape);
+        sql.append(db.getQuotedIdentifier(getName()));
         sql.append(" where 0 = 1");
 
         try {
-            stmt = meta.getConnection().prepareStatement(sql.toString());
+            stmt = db.getMetaData().getConnection().prepareStatement(sql.toString());
             rs = stmt.executeQuery();
 
             ResultSetMetaData rsMeta = rs.getMetaData();
@@ -560,11 +557,8 @@ public class Table implements Comparable {
             sql.append('.');
         }
 
-        String escape = db.getMetaData().getIdentifierQuoteString();
-        sql.append(escape);
-        sql.append(getName());
-        sql.append(escape);
-
+        sql.append(db.getQuotedIdentifier(getName()));
+        
         try {
             stmt = db.getConnection().prepareStatement(sql.toString());
             rs = stmt.executeQuery();
