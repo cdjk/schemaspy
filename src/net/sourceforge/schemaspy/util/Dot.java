@@ -1,7 +1,7 @@
 package net.sourceforge.schemaspy.util;
 
 import java.io.*;
-import java.util.regex.*;
+import java.util.*;
 
 public class Dot {
     private static Dot instance = new Dot();
@@ -10,21 +10,16 @@ public class Dot {
     private final Version badVersion = new Version("2.4");
 
     private Dot() {
-        String versionText = null;
+        String tempVersion = null;
         try {
-            // dot -V should return something similar to:
-            //  dot version 2.8 (Fri Feb  3 22:38:53 UTC 2006)
-            // or sometimes something like:
-            //  dot - Graphviz version 2.9.20061004.0440 (Wed Oct 4 21:01:52 GMT 2006)
             String dotCommand = "dot -V";
             Process process = Runtime.getRuntime().exec(dotCommand);
             BufferedReader reader = new BufferedReader(new InputStreamReader(process.getErrorStream()));
             String versionLine = reader.readLine();
-            
-            // look for a number followed numbers or dots
-            Matcher matcher = Pattern.compile("[0-9][0-9.]+").matcher(versionLine);
-            if (matcher.find()) {
-                versionText = matcher.group();
+            StringTokenizer tokenizer = new StringTokenizer(versionLine);
+            if (tokenizer.nextToken().equals("dot")) {  // skip 'dot'
+                tokenizer.nextToken();                  // skip 'version'
+                tempVersion = tokenizer.nextToken();    // x.x.x
             } else {
                 System.err.println();
                 System.err.println("Invalid dot configuration detected.  '" + dotCommand + "' returned:");
@@ -33,7 +28,7 @@ public class Dot {
         } catch (Exception validDotDoesntExist) {
         }
 
-        version = new Version(versionText);
+        version = new Version(tempVersion);
     }
 
     public static Dot getInstance() {
@@ -121,9 +116,9 @@ public class Dot {
     }
 
     public class DotFailure extends IOException {
-        private static final long serialVersionUID = 3833743270181351987L;
+		private static final long serialVersionUID = 3833743270181351987L;
 
-        public DotFailure(String msg) {
+		public DotFailure(String msg) {
             super(msg);
         }
     }
