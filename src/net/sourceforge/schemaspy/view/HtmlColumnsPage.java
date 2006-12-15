@@ -2,7 +2,6 @@ package net.sourceforge.schemaspy.view;
 
 import java.io.*;
 import java.util.*;
-import net.sourceforge.schemaspy.*;
 import net.sourceforge.schemaspy.model.*;
 import net.sourceforge.schemaspy.util.*;
 
@@ -116,7 +115,7 @@ public class HtmlColumnsPage extends HtmlFormatter {
         html.writeln("<tr valign='top'><td class='container' align='left' valign='top'>");
         html.writeln("<p/>");
         StyleSheet css = StyleSheet.getInstance();
-        String commentStatus = Config.getInstance().isDisplayCommentsIntiallyEnabled() ? "checked " : "";
+        String commentStatus = Boolean.getBoolean("commentsInitiallyDisplayed") ? "checked " : "";
         html.writeln("<form name='options' action=''>");
         html.writeln(" <input type=checkbox onclick=\"toggle(" + css.getOffsetOf(".relatedKey") + ");\" id=showRelatedCols>Related columns");
         html.writeln(" <input type=checkbox onclick=\"toggle(" + css.getOffsetOf(".constraint") + ");\" id=showConstNames>Constraint names");
@@ -134,7 +133,7 @@ public class HtmlColumnsPage extends HtmlFormatter {
         }
         html.write(" contains ");
         html.write(String.valueOf(numberOfColumns));
-        html.write(" columns</b> - click on heading to sort:");
+        html.write(" columns:</b>");
         Collection tables = db.getTables();
         boolean hasTableIds = tables.size() > 0 && ((Table)tables.iterator().next()).getId() != null;
         writeMainTableHeader(hasTableIds, selectedColumn, html);

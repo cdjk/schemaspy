@@ -3,19 +3,18 @@ package net.sourceforge.schemaspy.view;
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.Set;
-import net.sourceforge.schemaspy.Config;
 import net.sourceforge.schemaspy.model.*;
 import net.sourceforge.schemaspy.util.Dot;
 import net.sourceforge.schemaspy.util.HtmlEncoder;
 import net.sourceforge.schemaspy.util.LineWriter;
 
 public class HtmlFormatter {
-    protected final boolean encodeComments       = Config.getInstance().isEncodeCommentsEnabled();
-    protected final boolean displayTableComments = Config.getInstance().isTableCommentsEnabled();
-    protected final boolean displayNumRows       = Config.getInstance().isNumRowsEnabled();
-    private   final boolean isMetered            = Config.getInstance().isMeterEnabled();
+    protected final boolean encodeComments;
+    protected final boolean displayTableComments;
 
     protected HtmlFormatter() {
+        encodeComments = Boolean.getBoolean("encodeComments");
+        displayTableComments = Boolean.getBoolean("displayTableComments");
     }
     
     protected void writeHeader(Database db, Table table, String text, boolean showOrphans, LineWriter out) throws IOException {
@@ -29,7 +28,7 @@ public class HtmlFormatter {
         if (table != null)
             out.write("../");
         out.writeln("schemaSpy.css' type='text/css'>");
-        out.writeln("  <meta HTTP-EQUIV='Content-Type' CONTENT='text/html; charset=" + Config.getInstance().getCharset() + "'>");
+        out.writeln("  <meta HTTP-EQUIV='Content-Type' CONTENT='text/html; charset=ISO-8859-1'>");
         out.writeln("  <SCRIPT LANGUAGE='JavaScript' TYPE='text/javascript' SRC='" + (table == null ? "" : "../") + "schemaSpy.js'></SCRIPT>");
         out.writeln("</head>");
         out.writeln("<body onload='syncOptions()'>");
@@ -75,7 +74,7 @@ public class HtmlFormatter {
         html.writeln("<table id='headerHolder' cellspacing='0' cellpadding='0'><tr><td>");
         html.writeln("<div id='header'>");
         html.writeln(" <ul>");
-        if (Config.getInstance().isOneOfMultipleSchemas())
+        if (isOneOfMultipleSchemas())
             html.writeln("  <li><a href='" + path + "../index.html' title='All Schemas Evaluated'>Schemas</a></li>");
         html.writeln("  <li" + (isMainIndex() ? " id='current'" : "") + "><a href='" + path + "index.html' title='All tables and views in the schema'>Tables</a></li>");
         html.writeln("  <li" + (isRelationshipsPage() ? " id='current'" : "") + "><a href='" + path + "relationships.html' title='Graphical view of table relationships'>Relationships</a></li>");
@@ -128,7 +127,8 @@ public class HtmlFormatter {
     }
 
     protected boolean sourceForgeLogoEnabled() {
-        return Config.getInstance().isLogoEnabled();
+        // I hate this hack, but I don't want to have to pass this boolean everywhere...
+        return Boolean.getBoolean("sourceforgelogo") | true;
     }
 
     protected void writeLegend(boolean tableDetails, LineWriter out) throws IOException {
@@ -193,18 +193,6 @@ public class HtmlFormatter {
 
     protected void writeFooter(LineWriter html) throws IOException {
         html.writeln("</div>");
-        if (isMetered) {
-            html.writeln("<span style='float: right;' title='This link is only on the SchemaSpy sample pages'>");
-            html.writeln("<!-- Site Meter -->");
-            html.writeln("<script type='text/javascript' src='http://s28.sitemeter.com/js/counter.js?site=s28schemaspy'>");
-            html.writeln("</script>");
-            html.writeln("<noscript>");
-            html.writeln("<a href='http://s28.sitemeter.com/stats.asp?site=s28schemaspy' target='_top'>");
-            html.writeln("<img src='http://s28.sitemeter.com/meter.asp?site=s28schemaspy' alt='Site Meter' border='0'/></a>");
-            html.writeln("</noscript>");
-            html.writeln("<!-- Copyright (c)2006 Site Meter -->");
-            html.writeln("</span>");
-        }
         html.writeln("</body>");
         html.writeln("</html>");
     }
@@ -271,5 +259,16 @@ public class HtmlFormatter {
      */
     protected boolean isColumnsPage() {
         return false;
+    }
+
+    /**
+     * Nasty way of dealing with 'global' variables.
+     * Returns true if we're evaluating a bunch of schemas in one go and
+     * at this point we're evaluating a specific schema.
+     *
+     * @return boolean
+     */
+    protected boolean isOneOfMultipleSchemas() {
+        return Boolean.getBoolean("oneofmultipleschemas");
     }
 }

@@ -2,7 +2,6 @@ package net.sourceforge.schemaspy.view;
 
 import java.text.*;
 import java.util.*;
-import net.sourceforge.schemaspy.*;
 import net.sourceforge.schemaspy.model.*;
 
 public class DotNode {
@@ -13,7 +12,6 @@ public class DotNode {
     private final String path;
     private final Set excludedColumns = new HashSet();
     private final String lineSeparator = System.getProperty("line.separator");
-    private final boolean displayNumRows = Config.getInstance().isNumRowsEnabled();
 
     /**
      * Create a DotNode that is a focal point of a graph
@@ -69,7 +67,7 @@ public class DotNode {
         buf.append("    label=<" + lineSeparator);
         buf.append("    <TABLE BORDER=\"" + (isDetailed ? "2" : "0") + "\" CELLBORDER=\"1\" CELLSPACING=\"0\" BGCOLOR=\"" + css.getTableBackground() + "\">" + lineSeparator);
         buf.append("      <TR>");
-        buf.append("<TD PORT=\"" + tableName + ".heading\" COLSPAN=\"3\" BGCOLOR=\"" + css.getTableHeadBackground() + "\" ALIGN=\"CENTER\">" + (table.isRemote() ? table.getSchema() + "." : "") + tableName + "</TD>");
+        buf.append("<TD PORT=\"" + tableName + ".heading\" COLSPAN=\"3\" BGCOLOR=\"" + css.getTableHeadBackground() + "\" ALIGN=\"CENTER\">" + tableName + "</TD>");
         buf.append("</TR>" + lineSeparator);
 
         if (showColumns) {
@@ -117,18 +115,13 @@ public class DotNode {
             buf.append("  ");
         buf.append("</TD>");
         buf.append("<TD ALIGN=\"RIGHT\" BGCOLOR=\"" + css.getBodyBackground() + "\">");
-        if (table.isView())
+        if (table.isView()) {
             buf.append("view");
-        else {
-            final int numRows = table.getNumRows();
-            if (displayNumRows && numRows != -1) {
-                buf.append(NumberFormat.getInstance().format(numRows));
-                buf.append(" row"); 
-                if (numRows != 1)
-                    buf.append('s');
-            } else {
-                buf.append("  ");
-            }
+        } else {
+            buf.append(NumberFormat.getInstance().format(table.getNumRows()));
+            buf.append(" row");
+            if (table.getNumRows() != 1)
+                buf.append('s');
         }
         buf.append("</TD>");
         buf.append("<TD ALIGN=\"RIGHT\" BGCOLOR=\"" + css.getBodyBackground() + "\">");
@@ -140,34 +133,10 @@ public class DotNode {
         buf.append("</TD></TR>" + lineSeparator);
 
         buf.append("    </TABLE>>" + lineSeparator);
-        buf.append("    URL=\"" + path + toNCR(tableName) + ".html" + (path.length() == 0 && !isDetailed ? "#graph" : "#") + "\"" + lineSeparator);
-        buf.append("    tooltip=\"" + toNCR(tableName) + "\"" + lineSeparator);
+        buf.append("    URL=\"" + path + tableName + ".html" + (path.length() == 0 && !isDetailed ? "#graph" : "#") + "\"" + lineSeparator);
+        buf.append("    tooltip=\"" + tableName + "\"" + lineSeparator);
         buf.append("  ];");
 
         return buf.toString();
-    }
-    
-    /**
-     * Translates specified string to Numeric Character Reference (NCR).
-     * This (hopefully) allows Unicode languages to be displayed correctly.<p>
-     * The basis for this code was found 
-     * <a href='http://d.hatena.ne.jp/etherealmaro/20060806#1154886500'>here</a>.
-     * 
-     * @param str
-     * @return
-     */
-    private static String toNCR(String str) {
-        StringBuffer result = new StringBuffer();
-        for (int i = 0; i < str.length(); ++i) {
-            char ch = str.charAt(i);
-            if (ch <= 127) {    // don't confuse things unless necessary
-                result.append(ch);
-            } else {
-                result.append("&#");
-                result.append(Integer.parseInt(Integer.toHexString(ch), 16));
-                result.append(";");
-            }
-        }
-        return result.toString();
     }
 }

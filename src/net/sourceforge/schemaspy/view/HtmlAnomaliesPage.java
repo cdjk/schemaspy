@@ -23,11 +23,11 @@ public class HtmlAnomaliesPage extends HtmlFormatter {
     public void write(Database database, Collection tables, List impliedConstraints, boolean hasOrphans, LineWriter out) throws IOException {
         writeHeader(database, hasOrphans, out);
         writeImpliedConstraints(impliedConstraints, out);
-        writeTablesWithoutIndexes(DbAnalyzer.getTablesWithoutIndexes(new HashSet(tables)), out);
-        writeUniqueNullables(DbAnalyzer.getMustBeUniqueNullableColumns(new HashSet(tables)), out);
-        writeTablesWithOneColumn(DbAnalyzer.getTablesWithOneColumn(tables), out);
-        writeTablesWithIncrementingColumnNames(DbAnalyzer.getTablesWithIncrementingColumnNames(tables), out);
-        writeDefaultNullStrings(DbAnalyzer.getDefaultNullStringColumns(new HashSet(tables)), out);
+        writeTablesWithoutIndexes(DBAnalyzer.getTablesWithoutIndexes(new HashSet(tables)), out);
+        writeUniqueNullables(DBAnalyzer.getMustBeUniqueNullableColumns(new HashSet(tables)), out);
+        writeTablesWithOneColumn(DBAnalyzer.getTablesWithOneColumn(tables), out);
+        writeTablesWithIncrementingColumnNames(DBAnalyzer.getTablesWithIncrementingColumnNames(tables), out);
+        writeDefaultNullStrings(DBAnalyzer.getDefaultNullStringColumns(new HashSet(tables)), out);
         writeFooter(out);
     }
 
@@ -119,14 +119,10 @@ public class HtmlAnomaliesPage extends HtmlFormatter {
         if (!unindexedTables.isEmpty()) {
             out.writeln("<table class='dataTable' border='1' rules='groups'>");
             out.writeln("<colgroup>");
-            if (displayNumRows)
-                out.writeln("<colgroup>");
+            out.writeln("<colgroup>");
             out.writeln("<thead align='left'>");
             out.writeln("<tr>");
-            out.write("  <th>Table</th>");
-            if (displayNumRows)
-                out.write("<th>Rows</th>");
-            out.writeln();
+            out.writeln("  <th>Table</th><th>Rows</th>");
             out.writeln("</tr>");
             out.writeln("</thead>");
             out.writeln("<tbody>");
@@ -141,12 +137,10 @@ public class HtmlAnomaliesPage extends HtmlFormatter {
                 out.write(table.getName());
                 out.write("</a>");
                 out.writeln("</td>");
-                if (displayNumRows) {
-                    out.write("  <td class='detail' align='right'>");
-                    if (!table.isView())
-                        out.write(String.valueOf(NumberFormat.getIntegerInstance().format(table.getNumRows())));
-                    out.writeln("</td>");
-                }
+                out.write("  <td class='detail' align='right'>");
+                if (!table.isView())
+                    out.write(String.valueOf(NumberFormat.getIntegerInstance().format(table.getNumRows())));
+                out.writeln("</td>");
                 out.writeln(" </tr>");
             }
 

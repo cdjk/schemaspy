@@ -2,12 +2,11 @@ package net.sourceforge.schemaspy.model;
 
 import java.sql.*;
 import java.util.*;
-import net.sourceforge.schemaspy.*;
 
 public class Table implements Comparable {
     private final String schema;
     private final String name;
-    protected final Map columns = new HashMap();
+    private final Map columns = new HashMap();
     private final List primaryKeys = new ArrayList();
     private final Map foreignKeys = new HashMap();
     private final Map indexes = new HashMap();
@@ -18,45 +17,27 @@ public class Table implements Comparable {
     private int maxChildren;
     private int maxParents;
 
-    public Table(Database db, String schema, String name, String comments, Properties properties) throws SQLException {
+    public Table(Database db, String schema, String name, String comments, DatabaseMetaData meta, Properties properties) throws SQLException {
         this.schema = schema;
         this.name = name;
         setComments(comments);
         initColumns(db);
-        initIndexes(db, properties);
-        initPrimaryKeys(db.getMetaData());
-        numRows = Config.getInstance().isNumRowsEnabled() ? fetchNumRows(db) : -1;
+        initIndexes(db, meta, properties);
+        initPrimaryKeys(meta);
+        numRows = fetchNumRows(db);
     }
-    
-    public void connectForeignKeys(Map tables, Database db) throws SQLException {
+
+    public void connectForeignKeys(Map tables, DatabaseMetaData meta) throws SQLException {
         ResultSet rs = null;
 
         try {
-            rs = db.getMetaData().getImportedKeys(null, getSchema(), getName());
+            rs = meta.getImportedKeys(null, getSchema(), getName());
 
             while (rs.next())
-                addForeignKey(rs, tables, db);
+                addForeignKey(rs, tables);
         } finally {
             if (rs != null)
                 rs.close();
-        }
-        
-        // if we're one of multples then also find all of the 'remote' tables in other
-        // schemas that point to our primary keys (not necessary in the normal case
-        // as we infer this from the opposite direction)
-        if (getSchema() != null && Config.getInstance().isOneOfMultipleSchemas()) {
-            try {
-                rs = db.getMetaData().getExportedKeys(null, getSchema(), getName());
-
-                while (rs.next()) {
-                    String otherSchema = rs.getString("FKTABLE_SCHEM");
-                    if (!getSchema().equals(otherSchema))
-                        db.addRemoteTable(otherSchema, rs.getString("FKTABLE_NAME"), getSchema());
-                }
-            } finally {
-                if (rs != null)
-                    rs.close();
-            }
         }
     }
 
@@ -74,12 +55,12 @@ public class Table implements Comparable {
 
     /**
      *
-     * @param rs ResultSet from {@link DatabaseMetaData#getImportedKeys(String, String, String)}
+     * @param rs ResultSet from DatabaseMetaData.getImportedKeys()
      * @param tables Map
-     * @param db 
+     * @param meta DatabaseMetaData
      * @throws SQLException
      */
-    protected void addForeignKey(ResultSet rs, Map tables, Database db) throws SQLException {
+    private void addForeignKey(ResultSet rs, Map tables) throws SQLException {
         String name = rs.getString("FK_NAME");
 
         if (name == null)
@@ -97,18 +78,13 @@ public class Table implements Comparable {
         foreignKey.addChildColumn(childColumn);
 
         Table parentTable = (Table)tables.get(rs.getString("PKTABLE_NAME").toUpperCase());
-        if (parentTable == null) {
-            String otherSchema = rs.getString("PKTABLE_SCHEM");
-            if (otherSchema != null && !otherSchema.equals(getSchema()) && Config.getInstance().isOneOfMultipleSchemas()) {
-                parentTable = db.addRemoteTable(otherSchema, rs.getString("PKTABLE_NAME"), getSchema());
-            }
-        }
-        
+
         if (parentTable != null) {
             TableColumn parentColumn = parentTable.getColumn(rs.getString("PKCOLUMN_NAME"));
+
             if (parentColumn != null) {
                 foreignKey.addParentColumn(parentColumn);
-    
+
                 childColumn.addParent(parentColumn, foreignKey);
                 parentColumn.addChild(childColumn, foreignKey);
             } else {
@@ -166,7 +142,7 @@ public class Table implements Comparable {
             }
         }
 
-        if (!isView() && !isRemote())
+        if (!isView())
             initColumnAutoUpdate(db);
     }
 
@@ -207,11 +183,7 @@ public class Table implements Comparable {
         }
     }
 
-    /**
-     * @param rs - from {@link DatabaseMetaData#getColumns(String, String, String, String)}
-     * @throws SQLException
-     */
-    protected void addColumn(ResultSet rs) throws SQLException {
+    private void addColumn(ResultSet rs) throws SQLException {
         String columnName = rs.getString("COLUMN_NAME");
 
         if (columnName == null)
@@ -229,8 +201,8 @@ public class Table implements Comparable {
      *
      * @throws SQLException
      */
-    private void initIndexes(Database db, Properties properties) throws SQLException {
-        if (isView() || isRemote())
+    private void initIndexes(Database db, DatabaseMetaData meta, Properties properties) throws SQLException {
+        if (isView())
             return;
 
         // first try to initialize using the index query spec'd in the .properties
@@ -243,7 +215,7 @@ public class Table implements Comparable {
         ResultSet rs = null;
 
         try {
-            rs = db.getMetaData().getIndexInfo(null, getSchema(), getName(), false, true);
+            rs = meta.getIndexInfo(null, getSchema(), getName(), false, true);
 
             while (rs.next()) {
                 if (rs.getShort("TYPE") != DatabaseMetaData.tableIndexStatistic)
@@ -540,11 +512,7 @@ public class Table implements Comparable {
     public boolean isView() {
         return false;
     }
-    
-    public boolean isRemote() {
-        return false;
-    }
-    
+
     public String getViewSql() {
         return null;
     }
@@ -590,7 +558,7 @@ public class Table implements Comparable {
         }
 
         sql.append(db.getQuotedIdentifier(getName()));
-
+        
         try {
             stmt = db.getConnection().prepareStatement(sql.toString());
             rs = stmt.executeQuery();
@@ -605,7 +573,7 @@ public class Table implements Comparable {
                 stmt.close();
         }
     }
-    
+
     public String toString() {
         return getName();
     }

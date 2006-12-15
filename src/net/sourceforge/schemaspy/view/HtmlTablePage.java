@@ -4,15 +4,14 @@ import java.io.*;
 import java.sql.*;
 import java.text.*;
 import java.util.*;
-import net.sourceforge.schemaspy.*;
 import net.sourceforge.schemaspy.model.*;
 import net.sourceforge.schemaspy.util.*;
 
 public class HtmlTablePage extends HtmlFormatter {
     private static final HtmlTablePage instance = new HtmlTablePage();
     private Set keywords = null;
-    private final boolean encodeComments = Config.getInstance().isEncodeCommentsEnabled();
-    private final boolean commentsInitiallyDisplayed = Config.getInstance().isDisplayCommentsIntiallyEnabled();
+    private final boolean encodeComments = Boolean.getBoolean("encodeComments");
+    private final boolean commentsInitiallyDisplayed = Boolean.getBoolean("commentsInitiallyDisplayed");
 
     private Map defaultValueAliases = new HashMap();
     {
@@ -257,11 +256,8 @@ public class HtmlTablePage extends HtmlFormatter {
     }
 
     private void writeNumRows(Database db, Table table, LineWriter out) throws IOException {
-        if (displayNumRows && !table.isView())
-            out.write("<p/>Table contained " + NumberFormat.getIntegerInstance().format(table.getNumRows()) + " rows at ");
-        else
-            out.write("<p/>Analyzed at ");
-        out.writeln(db.getConnectTime());
+        if (!table.isView())
+            out.writeln("<p/>Table contained " + NumberFormat.getIntegerInstance().format(table.getNumRows()) + " rows at " + db.getConnectTime());
     }
 
     private void writeCheckConstraints(Table table, LineWriter out) throws IOException {

@@ -5,7 +5,7 @@ import java.util.*;
 import java.util.regex.*;
 import net.sourceforge.schemaspy.model.*;
 
-public class DbAnalyzer {
+public class DBAnalyzer {
     public static List getImpliedConstraints(Collection tables) throws SQLException {
         List columnsWithoutParents = new ArrayList();
         Map allPrimaries = new TreeMap(new Comparator() {

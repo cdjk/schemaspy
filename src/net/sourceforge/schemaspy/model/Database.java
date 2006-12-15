@@ -12,7 +12,6 @@ public class Database {
     private final String description;
     private final Map tables = new HashMap();
     private final Map views = new HashMap();
-    private final Map remoteTables = new HashMap(); // key: schema.tableName value: RemoteTable
     private final DatabaseMetaData meta;
     private final Connection connection;
     private final String connectTime = new SimpleDateFormat("EEE MMM dd HH:mm z yyyy").format(new Date());
@@ -27,7 +26,7 @@ public class Database {
         this.description = description;
         initTables(schema, meta, properties, include, maxThreads);
         initViews(schema, meta, properties, include);
-        connectTables();
+        connectTables(meta);
     }
 
     public String getName() {
@@ -52,11 +51,7 @@ public class Database {
     public Collection getViews() {
         return views.values();
     }
-    
-    public Collection getRemoteTables() {
-        return remoteTables.values();
-    }
-    
+
     public Connection getConnection() {
         return connection;
     }
@@ -82,7 +77,7 @@ public class Database {
         ResultSet rs = null;
 
         // "macro" to validate that a table is somewhat valid
-        final class TableValidator {
+        class TableValidator {
             boolean isValid(ResultSet rs) throws SQLException {
                 // some databases (MySQL) return more than we wanted
                 if (!rs.getString("TABLE_TYPE").equalsIgnoreCase("TABLE"))
@@ -339,19 +334,7 @@ public class Database {
 
         return stmt;
     }
-    
-    public Table addRemoteTable(String remoteSchema, String remoteTableName, String baseSchema) throws SQLException {
-        String fullName = remoteSchema + "." + remoteTableName;
-        Table remoteTable = (Table)remoteTables.get(fullName);
-        if (remoteTable == null) {
-            remoteTable = new RemoteTable(this, remoteSchema, remoteTableName, baseSchema);
-            remoteTable.connectForeignKeys(tables, this);
-            remoteTables.put(fullName, remoteTable);
-        }
-        
-        return remoteTable;
-    }
-    
+
     /**
      * Return an uppercased <code>Set</code> of all SQL keywords used by a database
      * 
@@ -473,7 +456,7 @@ public class Database {
         
         return invalidIdentifierPattern;
     }
-
+    
     /**
      * Replaces named parameters in <code>sql</code> with question marks and
      * returns appropriate matching values in the returned <code>List</code> of <code>String</code>s.
@@ -523,7 +506,7 @@ public class Database {
                 if (rs.getString("TABLE_TYPE").equals("VIEW")) {  // some databases (MySQL) return more than we wanted
                     System.out.print('.');
                     
-                    Table view = new View(this, rs, properties.getProperty("selectViewSql"));
+                    Table view = new View(this, rs, metadata, properties.getProperty("selectViewSql"));
                     if (include.matcher(view.getName()).matches())
                         views.put(view.getName().toUpperCase(), view);
                 }
@@ -534,11 +517,11 @@ public class Database {
         }
     }
 
-    private void connectTables() throws SQLException {
+    private void connectTables(DatabaseMetaData metadata) throws SQLException {
         Iterator iter = tables.values().iterator();
         while (iter.hasNext()) {
             Table table = (Table)iter.next();
-            table.connectForeignKeys(tables, this);
+            table.connectForeignKeys(tables, metadata);
         }
     }
 
@@ -554,7 +537,7 @@ public class Database {
         }
 
         protected void createImpl(String schemaName, String tableName, String remarks, Properties properties) throws SQLException {
-            Table table = new Table(Database.this, schemaName, tableName, remarks, properties);
+            Table table = new Table(Database.this, schemaName, tableName, remarks, meta, properties);
             tables.put(table.getName().toUpperCase(), table);
             System.out.print('.');
         }

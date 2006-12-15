@@ -3,7 +3,6 @@ package net.sourceforge.schemaspy.view;
 import java.io.*;
 import java.util.*;
 import java.util.regex.*;
-import net.sourceforge.schemaspy.*;
 import net.sourceforge.schemaspy.model.*;
 import net.sourceforge.schemaspy.util.*;
 
@@ -14,8 +13,8 @@ import net.sourceforge.schemaspy.util.*;
  */
 public class DotFormatter {
     private static DotFormatter instance = new DotFormatter();
-    private final int LargeGraphFontSize = Config.getInstance().getFontSize();
-    private final int CompactGraphFontSize = LargeGraphFontSize - 2;
+    private final int CompactGraphFontSize = 9;
+    private final int LargeGraphFontSize = 11;
     private final String CompactNodeSeparator = "0.05";
     private final String CompactRankSeparator = "0.2";
 
@@ -243,7 +242,7 @@ public class DotFormatter {
         dot.writeln("// dot " + Dot.getInstance().getVersion() + " on " + System.getProperty("os.name") + " " + System.getProperty("os.version"));
         dot.writeln("digraph \"" + graphName + "\" {");
         dot.writeln("  graph [");
-        boolean rankdirbug = Config.getInstance().isRankDirBugEnabled();
+        boolean rankdirbug = Boolean.getBoolean("rankdirbug");  // another nasty hack
         if (!rankdirbug)
             dot.writeln("    rankdir=\"RL\"");
         dot.writeln("    bgcolor=\"" + StyleSheet.getInstance().getBodyBackground() + "\"");
@@ -258,11 +257,9 @@ public class DotFormatter {
             dot.writeln("    nodesep=\"" + CompactNodeSeparator + "\"");
             dot.writeln("    ranksep=\"" + CompactRankSeparator + "\"");
         }
-        dot.writeln("    fontname=\"" + Config.getInstance().getFont() + "\"");
-        dot.writeln("    fontsize=\"" + (compact ? CompactGraphFontSize : LargeGraphFontSize) + "\"");
         dot.writeln("  ];");
         dot.writeln("  node [");
-        dot.writeln("    fontname=\"" + Config.getInstance().getFont() + "\"");
+        dot.writeln("    fontname=\"Helvetica\"");
         dot.writeln("    fontsize=\"" + (compact ? CompactGraphFontSize : LargeGraphFontSize) + "\"");
         dot.writeln("    shape=\"plaintext\"");
         dot.writeln("  ];");
@@ -271,19 +268,19 @@ public class DotFormatter {
         dot.writeln("  ];");
 }
 
-    public void writeRealRelationships(Database db, Collection tables, boolean compact, boolean details, WriteStats stats, LineWriter dot) throws IOException {
+    public void writeRealRelationships(Collection tables, boolean compact, boolean details, WriteStats stats, LineWriter dot) throws IOException {
         boolean oldImplied = stats.setIncludeImplied(false);
-        writeRelationships(db, tables, compact, details, stats, dot);
+        writeRelationships(tables, compact, details, stats, dot);
         stats.setIncludeImplied(oldImplied);
     }
 
-    public void writeAllRelationships(Database db, Collection tables, boolean compact, boolean details, WriteStats stats, LineWriter dot) throws IOException {
+    public void writeAllRelationships(Collection tables, boolean compact, boolean details, WriteStats stats, LineWriter dot) throws IOException {
         boolean oldImplied = stats.setIncludeImplied(true);
-        writeRelationships(db, tables, compact, details, stats, dot);
+        writeRelationships(tables, compact, details, stats, dot);
         stats.setIncludeImplied(oldImplied);
     }
 
-    private void writeRelationships(Database db, Collection tables, boolean compact, boolean details, WriteStats stats, LineWriter dot) throws IOException {
+    private void writeRelationships(Collection tables, boolean compact, boolean details, WriteStats stats, LineWriter dot) throws IOException {
         DotConnectorFinder finder = DotConnectorFinder.getInstance();
         String graphName;
         if (stats.includeImplied()) {
@@ -308,18 +305,12 @@ public class DotFormatter {
                 nodes.put(table, new DotNode(table, details, "tables/"));
             }
         }
-        
-        iter = db.getRemoteTables().iterator();
-        while (iter.hasNext()) {
-            Table table = (Table)iter.next();
-            nodes.put(table, new DotNode(table, details, "../" + table.getSchema() + "/tables"));
-        }
 
         Set connectors = new TreeSet();
 
-        iter = nodes.values().iterator();
+        iter = tables.iterator();
         while (iter.hasNext())
-            connectors.addAll(finder.getRelatedConnectors(((DotNode)iter.next()).getTable(), stats));
+            connectors.addAll(finder.getRelatedConnectors((Table)iter.next(), stats));
 
         markExcludedColumns(nodes, stats.getExcludedColumns());
 

@@ -7,10 +7,7 @@ import java.util.regex.*;
 import net.sourceforge.schemaspy.util.*;
 import net.sourceforge.schemaspy.view.*;
 
-/**
- * @author John Currier
- */
-public final class MultipleSchemaAnalyzer {
+public class MultipleSchemaAnalyzer {
     private static MultipleSchemaAnalyzer instance = new MultipleSchemaAnalyzer();
 
     private MultipleSchemaAnalyzer() {
@@ -20,7 +17,7 @@ public final class MultipleSchemaAnalyzer {
         return instance;
     }
 
-    public int analyze(String dbName, DatabaseMetaData meta, String schemaSpec, List args, String user, File outputDir, String loadedFrom) throws SQLException, IOException {
+    public void analyze(String dbName, DatabaseMetaData meta, String schemaSpec, List args, String user, File outputDir, String loadedFrom) throws SQLException, IOException {
         long start = System.currentTimeMillis();
         List genericCommand = new ArrayList();
         genericCommand.add("java");
@@ -33,14 +30,7 @@ public final class MultipleSchemaAnalyzer {
             genericCommand.add("-jar");
             genericCommand.add(loadedFrom);
         }
-        
-        for (Iterator iter = args.iterator(); iter.hasNext(); ) {
-            String next = iter.next().toString();
-            if (next.startsWith("-"))
-                genericCommand.add(next);
-            else
-                genericCommand.add("\"" + next + "\"");
-        }
+        genericCommand.addAll(args);
 
         System.out.println("Analyzing schemas that match regular expression '" + schemaSpec + "':");
         System.out.println("(use -schemaSpec on command line or in .properties to exclude other schemas)");
@@ -59,7 +49,6 @@ public final class MultipleSchemaAnalyzer {
             command.add("-o");
             command.add(new File(outputDir, schema).toString());
             System.out.println("Analyzing " + schema);
-            System.out.flush();
             Process java = Runtime.getRuntime().exec((String[])command.toArray(new String[]{}));
             new ProcessOutputReader(java.getInputStream(), System.out).start();
             new ProcessOutputReader(java.getErrorStream(), System.err).start();
@@ -72,7 +61,7 @@ public final class MultipleSchemaAnalyzer {
                     while (iter.hasNext())
                         System.err.print(" " + iter.next());
                     System.err.println();
-                    return rc;
+                    System.exit(1);
                 }
             } catch (InterruptedException exc) {
             }
@@ -82,7 +71,6 @@ public final class MultipleSchemaAnalyzer {
         System.out.println();
         System.out.println("Wrote relationship details of " + populatedSchemas.size() + " schema" + (populatedSchemas.size() == 1 ? "" : "s") + " in " + (end - start) / 1000 + " seconds.");
         System.out.println("Start with " + new File(outputDir, "index.html"));
-        return 0;
     }
 
     private void writeIndexPage(String dbName, List populatedSchemas, DatabaseMetaData meta, File outputDir) throws IOException {
@@ -99,7 +87,7 @@ public final class MultipleSchemaAnalyzer {
         if (meta.supportsSchemasInTableDefinitions()) {
             Pattern schemaRegex = Pattern.compile(schemaSpec);
 
-            populatedSchemas = DbAnalyzer.getPopulatedSchemas(meta, schemaSpec);
+            populatedSchemas = DBAnalyzer.getPopulatedSchemas(meta, schemaSpec);
             Iterator iter = populatedSchemas.iterator();
             while (iter.hasNext()) {
                 String schema = iter.next().toString();
@@ -128,7 +116,6 @@ public final class MultipleSchemaAnalyzer {
                 int ch;
                 while ((ch = processReader.read()) != -1) {
                     out.print((char)ch);
-                    out.flush();
                 }
             } catch (IOException ioException) {
                 ioException.printStackTrace();

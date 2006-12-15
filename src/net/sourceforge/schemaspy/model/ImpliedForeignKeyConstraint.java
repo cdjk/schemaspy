@@ -3,11 +3,6 @@ package net.sourceforge.schemaspy.model;
 import java.sql.*;
 
 public class ImpliedForeignKeyConstraint extends ForeignKeyConstraint {
-    /**
-     * @param parentColumn
-     * @param childColumn
-     * @throws java.sql.SQLException
-     */
     public ImpliedForeignKeyConstraint(TableColumn parentColumn, TableColumn childColumn) throws SQLException {
         super(childColumn.getTable(), null);
 
@@ -18,23 +13,14 @@ public class ImpliedForeignKeyConstraint extends ForeignKeyConstraint {
         parentColumn.addChild(childColumn, this);
     }
 
-    /**
-     * @return
-     */
     public String getName() {
         return "Implied Constraint";
     }
 
-    /**
-     * @return
-     */
     public boolean isImplied() {
         return true;
     }
 
-    /**
-     * @return
-     */
     public String toString() {
         StringBuffer buf = new StringBuffer();
 
