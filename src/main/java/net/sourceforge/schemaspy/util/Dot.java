@@ -59,18 +59,6 @@ public class Dot {
             String versionLine = reader.readLine();
             logger.config("Version: \"" + versionLine + "\"");
 
-            // look for a number followed numbers or dots
-            Matcher matcher = Pattern.compile("[0-9][0-9.]+").matcher(versionLine);
-            if (matcher.find()) {
-                versionText = matcher.group();
-            } else {
-                if (Config.getInstance().isHtmlGenerationEnabled()) {
-                    System.err.println();
-                    logger.warning("Invalid dot configuration detected.  '" +
-                                        getDisplayableCommand(dotCommand) + "' returned:");
-                    logger.warning("   " + versionLine);
-                }
-            }
         } catch (Exception validDotDoesntExist) {
             if (Config.getInstance().isHtmlGenerationEnabled()) {
                 System.err.println();
@@ -90,7 +78,7 @@ public class Dot {
     }
 
     public boolean exists() {
-        return version.toString() != null;
+	return true;
     }
 
     public Version getVersion() {
@@ -98,7 +86,7 @@ public class Dot {
     }
 
     public boolean isValid() {
-        return exists() && (getVersion().equals(supportedVersion) || getVersion().compareTo(badVersion) > 0);
+	return true;
     }
 
     public String getSupportedVersions() {
@@ -106,7 +94,7 @@ public class Dot {
     }
 
     public boolean supportsCenteredEastWestEdges() {
-        return getVersion().compareTo(new Version("2.6")) >= 0;
+	return true;
     }
 
     /**

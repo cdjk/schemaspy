@@ -48,6 +48,7 @@ public class TableColumnMeta {
     private final boolean isAllExcluded;
     private final boolean isImpliedParentsDisabled;
     private final boolean isImpliedChildrenDisabled;
+    private final boolean isUnique;
     private static final Logger logger = Logger.getLogger(TableColumnMeta.class.getName());
 
     TableColumnMeta(Node colNode) {
